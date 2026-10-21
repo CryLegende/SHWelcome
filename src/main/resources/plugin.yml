@@ -1,0 +1,10 @@
+name: SHWelcome
+version: '${project.version}'
+main: org.Cry_Legende.sHWelcome.SHWelcome
+api-version: '1.20'
+author: Cry_Legende
+
+commands:
+  b:
+    description: Accueillir un nouveau joueur
+    usage: /b [pseudo]

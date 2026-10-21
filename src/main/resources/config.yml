@@ -1,0 +1,24 @@
+clickable_message: "&3&l« &6Cliquez ici &fpour souhaiter le bienvenue à &6%player% &b&l»"
+messages_de_bienvenue:
+  - "Bienvenue à toi %new_player%"
+  - "Bienvenue %new_player% :)"
+  - "Bienvenue !"
+  - "Bienvenue sur SkyHand %new_player%"
+  - "Hey %new_player%, bienvenue sur SkyHand !"
+
+cooldown_seconds: 60
+daily_limit: 5
+
+reward_commands:
+  - "azlink money add %player% 2"
+  - "shnetworklevel exp give %player% 5"
+  # - "sm %player% &7&l« &a&lSH &8&l» &7Vous avez reçu &d2 tokens &7et &b5 exp de network" 
+  - "sm %player% &7&l« &a&lSH &8&l» &7Vous avez reçu &d2 tokens" 
+  - "sm %player% &b+5 exp de network &8(&7/network&8)"
+
+messages:
+  no_new_players: "&7&l« &c&lSH &8&l» &7Aucun nouveau joueur à accueillir."
+  cooldown_expired: "&7&l« &c&lSH &8&l» &7Trop tard pour accueillir ce joueur."
+  already_welcomed: "&7&l« &c&lSH &8&l» &7Vous avez déjà accueilli ce joueur."
+  daily_limit_reached: "&7&l« &c&lSH &8&l» &7Limite quotidienne atteinte (%limit% accueils/jour)"
+  no_permission: "&8&l« &f&lSH &8&l» &fCommande inconnue, essayeez autre chose."
