@@ -18,12 +18,19 @@ public class SHWelcome extends JavaPlugin implements Listener {
 
     private final Map<String, NewPlayerEntry> newPlayers = new ConcurrentHashMap<>();
     private final Map<UUID, PlayerWelcomeData> welcomeData = new ConcurrentHashMap<>();
+    private final LiensServeur liensServeur = new LiensServeur(this);
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
         getServer().getPluginManager().registerEvents(this, this);
         Bukkit.getScheduler().runTaskTimer(this, this::cleanupExpiredPlayers, 1200L, 1200L);
+        liensServeur.ajouter();
+    }
+
+    @Override
+    public void onDisable() {
+        liensServeur.retirer();
     }
 
     @EventHandler

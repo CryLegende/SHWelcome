@@ -22,3 +22,22 @@ messages:
   already_welcomed: "&7&l« &c&lSH &8&l» &7Vous avez déjà accueilli ce joueur."
   daily_limit_reached: "&7&l« &c&lSH &8&l» &7Limite quotidienne atteinte (%limit% accueils/jour)"
   no_permission: "&8&l« &f&lSH &8&l» &fCommande inconnue, essayeez autre chose."
+
+# Liens du serveur : boutons du menu pause (« Liens du serveur », clients 1.21+). Les clients plus
+# anciens ignorent simplement ce paquet. Le libellé accepte les codes couleur avec '&'.
+# actif: false sur une entrée (ou sur toute la liste) la retire. Pris en compte au démarrage du plugin.
+liens-serveur:
+  actif: true
+  liens:
+    - libelle: '&9&lDiscord'
+      url: 'https://discord.skyhand.fr'
+      actif: true
+    - libelle: '&b&lSite web'
+      url: 'https://skyhand.fr'
+      actif: true
+    - libelle: '&d&lVote'
+      url: 'https://skyhand.fr/vote'
+      actif: true
+    - libelle: '&a&lBoutique'
+      url: 'https://store.skyhand.fr'
+      actif: true
