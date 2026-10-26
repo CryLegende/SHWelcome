@@ -16,8 +16,6 @@
 
 /b : souhaiter la bienvenue aux nouveaux joueurs contre une petite récompense.
 
-Ajoute aussi les liens du serveur (Discord, site, vote, boutique) au menu pause des clients 1.21+, via la clé `liens-serveur` du config.yml.
-
 Utilisé sur : **Opale**.
 
 ## Commandes
