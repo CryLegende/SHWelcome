@@ -3,13 +3,19 @@ package org.Cry_Legende.sHWelcome;
 import net.md_5.bungee.api.chat.*;
 import org.bukkit.*;
 import org.bukkit.command.*;
+import org.Cry_Legende.sHWelcome.utils.ActionLog;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.*;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.time.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,12 +24,34 @@ public class SHWelcome extends JavaPlugin implements Listener {
 
     private final Map<String, NewPlayerEntry> newPlayers = new ConcurrentHashMap<>();
     private final Map<UUID, PlayerWelcomeData> welcomeData = new ConcurrentHashMap<>();
+    private FileConfiguration messages;
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        loadMessages();
         getServer().getPluginManager().registerEvents(this, this);
         Bukkit.getScheduler().runTaskTimer(this, this::cleanupExpiredPlayers, 1200L, 1200L);
+    }
+
+    private void loadMessages() {
+        File file = new File(getDataFolder(), "messages.yml");
+        if (!file.exists()) {
+            saveResource("messages.yml", false);
+        }
+        messages = YamlConfiguration.loadConfiguration(file);
+        try (InputStream in = getResource("messages.yml")) {
+            if (in != null) {
+                messages.setDefaults(YamlConfiguration.loadConfiguration(new InputStreamReader(in, StandardCharsets.UTF_8)));
+            }
+        } catch (IOException e) {
+            getLogger().warning("messages.yml par défaut illisible : " + e.getMessage());
+        }
+    }
+
+    private String message(String key) {
+        String value = messages.getString(key);
+        return value == null ? "" : value;
     }
 
     @EventHandler
@@ -32,7 +60,7 @@ public class SHWelcome extends JavaPlugin implements Listener {
         if (player.hasPlayedBefore()) return;
 
         Bukkit.getScheduler().scheduleSyncDelayedTask(this, () -> {
-            String rawMessage = sanitizeMessage(getConfig().getString("clickable_message"))
+            String rawMessage = sanitizeMessage(message("clickable_message"))
                 .replace("%player%", player.getName());
 
             TextComponent component = new TextComponent(TextComponent.fromLegacyText(
@@ -41,12 +69,12 @@ public class SHWelcome extends JavaPlugin implements Listener {
 
             component.setClickEvent(new ClickEvent(
                 ClickEvent.Action.RUN_COMMAND,
-                "/b \"" + player.getName() + "\"" // Ajout des guillemets
+                "/b \"" + player.getName() + "\""
             ));
 
             component.setHoverEvent(new HoverEvent(
                 HoverEvent.Action.SHOW_TEXT,
-                new ComponentBuilder("Cliquez pour accueillir " + player.getName()).create()
+                new ComponentBuilder().append(TextComponent.fromLegacyText(color(message("clickable_hover").replace("%player%", player.getName())))).create()
             ));
 
             Bukkit.getOnlinePlayers().stream()
@@ -82,18 +110,18 @@ public class SHWelcome extends JavaPlugin implements Listener {
         }
 
         if (entry == null) {
-            player.sendMessage(color(getConfig().getString("messages.no_new_players")));
+            player.sendMessage(color(message("no_new_players")));
             return;
         }
 
         if (System.currentTimeMillis() - entry.joinTime > getConfig().getInt("cooldown_seconds") * 1000L) {
-            player.sendMessage(color(getConfig().getString("messages.cooldown_expired")));
+            player.sendMessage(color(message("cooldown_expired")));
             newPlayers.remove(entry.playerName.toLowerCase());
             return;
         }
 
         if (entry.welcomers.contains(player.getUniqueId())) {
-            player.sendMessage(color(getConfig().getString("messages.already_welcomed")));
+            player.sendMessage(color(message("already_welcomed")));
             return;
         }
 
@@ -102,7 +130,7 @@ public class SHWelcome extends JavaPlugin implements Listener {
 
         // Vérification de la limite journalière
         if (data.count >= getConfig().getInt("daily_limit")) {
-            player.sendMessage(color(getConfig().getString("messages.daily_limit_reached")
+            player.sendMessage(color(message("daily_limit_reached")
                 .replace("%limit%", String.valueOf(getConfig().getInt("daily_limit")))));
             // Même si la récompense n'est pas donnée, on marque que le joueur a effectué son accueil
             entry.welcomers.add(player.getUniqueId());
@@ -136,6 +164,12 @@ public class SHWelcome extends JavaPlugin implements Listener {
             Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
                 command.replace("%player%", player.getName()))
         );
+
+        ActionLog.write(this, getConfig().getString("log_file", "bienvenues"),
+            getConfig().getString("reward_log_format", "%player% -> souhaite la bienvenue à %new_player% (%reward%)")
+                .replace("%player%", player.getName())
+                .replace("%new_player%", entry.playerName)
+                .replace("%reward%", getConfig().getString("reward_log_text", "2 tokens et 5 EXP de network")));
     }
 
 

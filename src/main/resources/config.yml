@@ -1,4 +1,22 @@
-clickable_message: "&3&l« &6Cliquez ici &fpour souhaiter le bienvenue à &6%player% &b&l»"
+# ======================================================================== #
+#                   SHWelcome - Configuration Principale                   #
+# ======================================================================== #
+#
+# Plugin : souhaiter la bienvenue aux nouveaux joueurs contre une petite
+# récompense.
+#
+# Commandes :
+#   /b [pseudo]   Souhaite la bienvenue à un nouveau joueur (le dernier arrivé
+#                 si aucun pseudo n'est donné).
+#
+# Permissions : aucune, la commande est ouverte à tous les joueurs.
+#
+# Les textes envoyés aux joueurs sont dans 'messages.yml'.
+#
+# ======================================================================== #
+
+# Lignes envoyées dans le chat par le joueur qui accueille (une au hasard).
+# Variable : %new_player% (pseudo du nouveau joueur).
 messages_de_bienvenue:
   - "Bienvenue à toi %new_player%"
   - "Bienvenue %new_player% :)"
@@ -6,19 +24,28 @@ messages_de_bienvenue:
   - "Bienvenue sur SkyHand %new_player%"
   - "Hey %new_player%, bienvenue sur SkyHand !"
 
+# Durée en secondes pendant laquelle un nouveau joueur peut être accueilli
+# après sa première connexion.
 cooldown_seconds: 60
+
+# Nombre maximum de bienvenues récompensées par joueur et par période de 24 heures.
 daily_limit: 5
 
+# Commandes exécutées par la console pour récompenser le joueur qui accueille.
+# Variable : %player% (joueur qui accueille).
 reward_commands:
   - "azlink money add %player% 2"
   - "shnetworklevel exp give %player% 5"
-  # - "sm %player% &7&l« &a&lSH &8&l» &7Vous avez reçu &d2 tokens &7et &b5 exp de network" 
-  - "sm %player% &7&l« &a&lSH &8&l» &7Vous avez reçu &d2 tokens" 
+  - "sm %player% &7&l« &a&lSH &8&l» &7Vous avez reçu &d2 tokens"
   - "sm %player% &b+5 exp de network &8(&7/network&8)"
 
-messages:
-  no_new_players: "&7&l« &c&lSH &8&l» &7Aucun nouveau joueur à accueillir."
-  cooldown_expired: "&7&l« &c&lSH &8&l» &7Trop tard pour accueillir ce joueur."
-  already_welcomed: "&7&l« &c&lSH &8&l» &7Vous avez déjà accueilli ce joueur."
-  daily_limit_reached: "&7&l« &c&lSH &8&l» &7Limite quotidienne atteinte (%limit% accueils/jour)"
-  no_permission: "&8&l« &f&lSH &8&l» &fCommande inconnue, essayeez autre chose."
+# Nom du fichier SHLogs dans lequel chaque bienvenue récompensée est écrite.
+log_file: "bienvenues"
+
+# Ligne écrite dans SHLogs pour chaque bienvenue récompensée.
+# Variables : %player% (joueur qui accueille), %new_player% (nouveau joueur),
+# %reward% (valeur de reward_log_text).
+reward_log_format: "%player% -> souhaite la bienvenue à %new_player% (%reward%)"
+
+# Récompense indiquée dans la ligne de log. À garder cohérente avec reward_commands.
+reward_log_text: "2 tokens et 5 EXP de network"

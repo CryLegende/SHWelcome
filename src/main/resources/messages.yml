@@ -1,0 +1,29 @@
+# ======================================================================== #
+#                    SHWelcome - Fichier de Messages                       #
+# ======================================================================== #
+#
+# Les codes couleur utilisent '&'.
+#
+# Variables :
+#   %player%  Pseudo du nouveau joueur (clickable_message, clickable_hover).
+#   %limit%   Limite de bienvenues récompensées par jour (daily_limit_reached).
+#
+# ======================================================================== #
+
+# Message cliquable envoyé aux autres joueurs quand un nouveau joueur arrive.
+clickable_message: "&3&l« &6Cliquez ici &fpour souhaiter le bienvenue à &6%player% &b&l»"
+
+# Texte affiché au survol du message cliquable.
+clickable_hover: "Cliquez pour accueillir %player%"
+
+# Aucun nouveau joueur à accueillir.
+no_new_players: "&7&l« &c&lSH &8&l» &7Aucun nouveau joueur à accueillir."
+
+# Le délai pour accueillir ce joueur est dépassé.
+cooldown_expired: "&7&l« &c&lSH &8&l» &7Trop tard pour accueillir ce joueur."
+
+# Le joueur a déjà accueilli ce nouveau joueur.
+already_welcomed: "&7&l« &c&lSH &8&l» &7Vous avez déjà accueilli ce joueur."
+
+# Limite quotidienne atteinte : la bienvenue est envoyée sans récompense.
+daily_limit_reached: "&7&l« &c&lSH &8&l» &7Limite quotidienne atteinte (%limit% accueils/jour)"

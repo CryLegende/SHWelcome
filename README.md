@@ -18,6 +18,14 @@
 
 Utilisé sur : **Opale**.
 
+## Dépendances
+
+- Optionnelle : `SHLogs`
+
+## Logs
+
+Chaque bienvenue récompensée est écrite dans SHLogs, dans le fichier `bienvenues` (`log_file`). Le texte de la ligne se règle avec `reward_log_format` et la récompense affichée avec `reward_log_text`. Une bienvenue sans récompense (limite quotidienne atteinte) n'est pas écrite. Sans SHLogs, la ligne est écrite dans la console.
+
 ## Commandes
 
 | Commande | Alias | Description | Permission |
@@ -30,7 +38,8 @@ Fichiers par défaut repris du serveur (secrets remplacés par `CHANGE_ME`). Cli
 
 <pre>
 plugins/SHWelcome/
-└── <a href="src/main/resources/config.yml">config.yml</a>
+├── <a href="src/main/resources/config.yml">config.yml</a>
+└── <a href="src/main/resources/messages.yml">messages.yml</a>
 </pre>
 
 ## Compilation
