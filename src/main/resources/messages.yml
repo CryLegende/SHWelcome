@@ -27,3 +27,6 @@ already_welcomed: "&7&l« &c&lSH &8&l» &7Vous avez déjà accueilli ce joueur."
 
 # Limite quotidienne atteinte : la bienvenue est envoyée sans récompense.
 daily_limit_reached: "&7&l« &c&lSH &8&l» &7Limite quotidienne atteinte (%limit% accueils/jour)"
+
+# Base des accueils injoignable (SHNetwork) : rien n'est compté, le joueur peut réessayer.
+service_unavailable: "&7&l« &c&lSH &8&l» &7Accueil impossible pour le moment, réessayez dans un instant."

@@ -20,11 +20,24 @@ Utilisé sur : **Opale**.
 
 ## Dépendances
 
-- Optionnelle : `SHLogs`
+- Optionnelles : `SHLogs`, `SHNetwork` (plusieurs serveurs Opale, voir plus bas)
 
 ## Logs
 
 Chaque bienvenue récompensée est écrite dans SHLogs, dans le fichier `bienvenues` (`log_file`). Le texte de la ligne se règle avec `reward_log_format` et la récompense affichée avec `reward_log_text`. Une bienvenue sans récompense (limite quotidienne atteinte) n'est pas écrite. Sans SHLogs, la ligne est écrite dans la console.
+
+## Plusieurs serveurs Opale (SHNetwork)
+
+Sans SHNetwork, ou avec `reseau.actif: false`, rien ne change : chaque serveur annonce les joueurs qui arrivent pour la première fois chez lui et compte les accueils en mémoire.
+
+Avec SHNetwork, le plugin décide pour tout le réseau :
+
+- **Nouveau joueur** : un joueur jamais vu sur ce serveur n'est annoncé que si sa première connexion au réseau date de moins de `reseau.premiere-connexion.duree-max-minutes` (registre `Global.sh_track_firstseen`, tenu par SHPlayerTrack) et qu'aucun autre serveur ne l'a déjà annoncé (`INSERT IGNORE` dans `welcome_announced`). Un vieux compte qui découvre un serveur n'est donc pas accueilli, et un nouveau joueur qui passe d'un serveur à l'autre n'est annoncé qu'une fois.
+- **Annonce** : le serveur qui gagne la réservation la publie sur le canal `reseau.canal` ; chaque serveur affiche le message cliquable à ses joueurs. Un `/b` tapé sur l'autre serveur marche, la bienvenue est relayée par le chat du réseau.
+- **Accueils** : un joueur n'accueille qu'une fois chaque nouveau joueur (`INSERT IGNORE` dans `welcome_welcomes`) et la limite `daily_limit` par période de 24 heures se compte en base (`welcome_daily`), quel que soit le serveur où il clique. La réservation, le décompte et la décision de récompenser se font dans une seule transaction.
+- **Base indisponible** : l'accueil est refusé avec un message, rien n'est compté.
+
+Tables dans `bo_net`, créées au démarrage si l'utilisateur a le droit CREATE (`sql/schema.sql` pour le faire à la main) : `welcome_announced`, `welcome_welcomes`, `welcome_daily`. Les lignes de plus de `reseau.conservation-jours` jours sont supprimées au démarrage.
 
 ## Commandes
 
@@ -40,6 +53,9 @@ Fichiers par défaut repris du serveur (secrets remplacés par `CHANGE_ME`). Cli
 plugins/SHWelcome/
 ├── <a href="src/main/resources/config.yml">config.yml</a>
 └── <a href="src/main/resources/messages.yml">messages.yml</a>
+
+sql/
+└── <a href="sql/schema.sql">schema.sql</a>
 </pre>
 
 ## Compilation

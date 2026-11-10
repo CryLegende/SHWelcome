@@ -3,7 +3,9 @@
 # ======================================================================== #
 #
 # Plugin : souhaiter la bienvenue aux nouveaux joueurs contre une petite
-# récompense.
+# récompense. Avec SHNetwork, un nouveau joueur est annoncé une seule fois pour tous
+# les serveurs Opale et les accueils sont comptés ensemble (voir la section 'reseau'
+# en bas du fichier).
 #
 # Commandes :
 #   /b [pseudo]   Souhaite la bienvenue à un nouveau joueur (le dernier arrivé
@@ -49,3 +51,32 @@ reward_log_format: "%player% -> souhaite la bienvenue à %new_player% (%reward%)
 
 # Récompense indiquée dans la ligne de log. À garder cohérente avec reward_commands.
 reward_log_text: "2 tokens et 5 EXP de network"
+
+# Plusieurs serveurs Opale (SHNetwork). Sans SHNetwork, ou avec actif: false, rien de cette section n'est lu :
+# chaque serveur annonce ses propres nouveaux joueurs et compte les accueils en mémoire, comme avant.
+# Avec SHNetwork, un joueur qui arrive pour la première fois sur un serveur n'est annoncé que si sa première
+# connexion au réseau est récente et qu'aucun autre serveur ne l'a déjà annoncé. L'annonce cliquable part sur tous
+# les serveurs, un joueur n'accueille qu'une fois chaque nouveau joueur et la limite par jour (daily_limit) se
+# compte en base, où qu'il clique.
+# Demande un redémarrage : tout (actif, canal, premiere-connexion, conservation-jours, base-de-donnees).
+reseau:
+  actif: true
+  # Canal du bus SHNetwork où le serveur qui découvre un nouveau joueur l'annonce aux autres
+  canal: welcome
+  # Registre de la première connexion de chaque compte (colonnes name en minuscules et first_played)
+  premiere-connexion:
+    # Table du registre, préfixée par sa base
+    table: "Global.sh_track_firstseen"
+    # Un compte n'est un nouveau joueur que si sa première connexion au réseau date de moins de ce nombre de minutes.
+    # Un compte plus ancien qui découvre un serveur n'est pas accueilli.
+    duree-max-minutes: 60
+  # Les annonces et les accueils plus vieux que ce nombre de jours sont supprimés de la base au démarrage
+  conservation-jours: 30
+  # Base partagée par tous les serveurs : tables welcome_announced, welcome_welcomes et welcome_daily
+  base-de-donnees:
+    url: "jdbc:mariadb://127.0.0.1:3306/bo_net"
+    utilisateur: shwelcome
+    mot-de-passe: CHANGE_ME
+    # Délai maximal de connexion et de réponse de la base, en millisecondes. Une base qui ne répond pas
+    # refuse l'accueil avec un message, rien n'est compté.
+    delai-ms: 3000
