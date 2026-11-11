@@ -7,6 +7,7 @@ import org.Cry_Legende.sHWelcome.network.NetBus;
 import org.Cry_Legende.sHWelcome.network.ShNetworkBus;
 import org.Cry_Legende.sHWelcome.network.WelcomeDatabase;
 import org.Cry_Legende.sHWelcome.utils.ActionLog;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -24,21 +25,32 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
-public class SHWelcome extends JavaPlugin implements Listener {
+public class SHWelcome extends JavaPlugin implements Listener, TabCompleter {
 
     private final Map<String, NewPlayerEntry> newPlayers = new ConcurrentHashMap<>();
     private final Map<UUID, PlayerWelcomeData> welcomeData = new ConcurrentHashMap<>();
-    private FileConfiguration messages;
+    private volatile FileConfiguration messages;
     // Non nul seulement avec SHNetwork : nouveau joueur décidé pour tout le réseau, accueils comptés en base
     private NetworkWelcome net;
+    // Section 'reseau' lue au démarrage : un reload qui la voit changer prévient qu'un redémarrage est nécessaire
+    private Map<String, Object> startNetworkSettings = Map.of();
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
         loadMessages();
+        startNetworkSettings = networkSettings();
         getServer().getPluginManager().registerEvents(this, this);
         Bukkit.getScheduler().runTaskTimer(this, this::cleanupExpiredPlayers, 1200L, 1200L);
         enableNetwork();
+
+        for (String name : List.of("bienvenue", "shwelcome")) {
+            PluginCommand command = getCommand(name);
+            if (command != null) {
+                command.setExecutor(this);
+                command.setTabCompleter(this);
+            }
+        }
     }
 
     @Override
@@ -80,13 +92,54 @@ public class SHWelcome extends JavaPlugin implements Listener {
         if (!file.exists()) {
             saveResource("messages.yml", false);
         }
-        messages = YamlConfiguration.loadConfiguration(file);
+        YamlConfiguration loaded;
+        try {
+            loaded = ReloadException.read(file);
+        } catch (ReloadException e) {
+            getLogger().warning("messages.yml illisible, textes du jar utilisés : " + e.getMessage());
+            loaded = new YamlConfiguration();
+        }
+        applyMessages(loaded);
+    }
+
+    /** Les clés absentes du fichier du serveur reprennent le texte du jar. */
+    private void applyMessages(YamlConfiguration loaded) {
         try (InputStream in = getResource("messages.yml")) {
             if (in != null) {
-                messages.setDefaults(YamlConfiguration.loadConfiguration(new InputStreamReader(in, StandardCharsets.UTF_8)));
+                loaded.setDefaults(YamlConfiguration.loadConfiguration(new InputStreamReader(in, StandardCharsets.UTF_8)));
             }
         } catch (IOException e) {
             getLogger().warning("messages.yml par défaut illisible : " + e.getMessage());
+        }
+        messages = loaded;
+    }
+
+    private Map<String, Object> networkSettings() {
+        ConfigurationSection section = getConfig().getConfigurationSection("reseau");
+        return section == null ? Map.of() : section.getValues(true);
+    }
+
+    /**
+     * Relit config.yml et messages.yml. Un fichier illisible laisse tout en l'état : l'erreur (fichier, ligne,
+     * problème) est donnée à l'expéditeur et à la console. Les accueils en attente et les compteurs de bienvenues
+     * ne sont pas touchés.
+     */
+    void reloadFiles(CommandSender sender) {
+        YamlConfiguration loadedMessages;
+        try {
+            ReloadException.read(new File(getDataFolder(), "config.yml"));
+            loadedMessages = ReloadException.read(new File(getDataFolder(), "messages.yml"));
+        } catch (ReloadException e) {
+            getLogger().warning("Rechargement refusé, ancienne configuration conservée : " + e.getMessage());
+            sender.sendMessage(color(message("reload-failed")
+                .replace("%file%", e.file()).replace("%line%", e.line()).replace("%error%", e.problem())));
+            return;
+        }
+        reloadConfig();
+        applyMessages(loadedMessages);
+        sender.sendMessage(color(message("reload")));
+        if (!networkSettings().equals(startNetworkSettings)) {
+            sender.sendMessage(color(message("reload-network")));
         }
     }
 
@@ -126,7 +179,7 @@ public class SHWelcome extends JavaPlugin implements Listener {
 
         component.setClickEvent(new ClickEvent(
             ClickEvent.Action.RUN_COMMAND,
-            "/b \"" + newName + "\""
+            "/bienvenue \"" + newName + "\""
         ));
 
         component.setHoverEvent(new HoverEvent(
@@ -143,11 +196,59 @@ public class SHWelcome extends JavaPlugin implements Listener {
 
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-        if (cmd.getName().equalsIgnoreCase("b") && sender instanceof Player) {
-            handleWelcomeCommand((Player) sender, args);
+        if (cmd.getName().equalsIgnoreCase("shwelcome")) {
+            adminCommand(sender, args);
             return true;
         }
-        return false;
+        if (!cmd.getName().equalsIgnoreCase("bienvenue")) {
+            return false;
+        }
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage(color(message("player-only")));
+            return true;
+        }
+        if (!player.hasPermission("shwelcome.use")) {
+            player.sendMessage(color(message("no-permission")));
+            return true;
+        }
+        handleWelcomeCommand(player, args);
+        return true;
+    }
+
+    private void adminCommand(CommandSender sender, String[] args) {
+        List<String> allowed = allowedSubcommands(sender);
+        if (allowed.isEmpty()) {
+            sender.sendMessage(color(message("no-permission")));
+        } else if (args.length >= 1 && args[0].equalsIgnoreCase("reload") && allowed.contains("reload")) {
+            reloadFiles(sender);
+        } else {
+            sender.sendMessage(color(message("usage-line").replace("%commands%", String.join("|", allowed))));
+        }
+    }
+
+    /** Sous-commandes de /shwelcome que l'expéditeur a le droit d'utiliser. */
+    private List<String> allowedSubcommands(CommandSender sender) {
+        List<String> subs = new ArrayList<>();
+        if (sender.hasPermission("shwelcome.admin.reload")) {
+            subs.add("reload");
+        }
+        return subs;
+    }
+
+    @Override
+    public List<String> onTabComplete(CommandSender sender, Command cmd, String label, String[] args) {
+        if (!cmd.getName().equalsIgnoreCase("shwelcome")) {
+            return null; // /bienvenue : pseudos des joueurs en ligne
+        }
+        List<String> out = new ArrayList<>();
+        if (args.length == 1) {
+            for (String sub : allowedSubcommands(sender)) {
+                if (sub.startsWith(args[0].toLowerCase(Locale.ROOT))) {
+                    out.add(sub);
+                }
+            }
+        }
+        return out;
     }
 
     private void handleWelcomeCommand(Player player, String[] args) {
@@ -250,6 +351,9 @@ public class SHWelcome extends JavaPlugin implements Listener {
     /** Le joueur écrit dans le chat une ligne de bienvenue au nouveau joueur. */
     void greet(Player welcomer, String newPlayerName) {
         List<String> messages = getConfig().getStringList("messages_de_bienvenue");
+        if (messages.isEmpty()) {
+            return;
+        }
         String msg = messages.get(new Random().nextInt(messages.size()))
             .replace("%new_player%", sanitizeMessage(newPlayerName));
         // Envoi sécurisé du message

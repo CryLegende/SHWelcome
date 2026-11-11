@@ -99,9 +99,9 @@ final class NetworkWelcome {
         plugin.announce(name, uuid, at);
     }
 
-    // ------------------------------------------------------------------ /b
+    // ------------------------------------------------------------------ /bienvenue
 
-    /** /b exécuté sur ce serveur (fil principal) ; {@code typedName} est nul quand le joueur n'a pas donné de pseudo. */
+    /** /bienvenue exécuté sur ce serveur (fil principal) ; {@code typedName} est nul quand le joueur n'a pas donné de pseudo. */
     void welcome(Player player, String typedName) {
         String target = typedName == null ? null : plugin.cleanName(typedName);
         NewPlayerEntry entry = target != null ? plugin.entryNamed(target) : plugin.latestEntryFor(player.getUniqueId());

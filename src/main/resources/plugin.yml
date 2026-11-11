@@ -14,6 +14,23 @@ libraries:
   - org.mariadb.jdbc:mariadb-java-client:3.4.1
 
 commands:
-  b:
-    description: Accueillir un nouveau joueur
-    usage: /b [pseudo]
+  bienvenue:
+    description: Souhaiter la bienvenue à un nouveau joueur
+    usage: /bienvenue [pseudo]
+    aliases: [b]
+  shwelcome:
+    description: Administration de SHWelcome.
+    usage: /shwelcome reload
+
+permissions:
+  shwelcome.use:
+    description: Souhaiter la bienvenue à un nouveau joueur (/bienvenue, alias /b).
+    default: true
+  shwelcome.admin:
+    description: Toutes les sous-commandes de /shwelcome.
+    default: op
+    children:
+      shwelcome.admin.reload: true
+  shwelcome.admin.reload:
+    description: Recharger config.yml et messages.yml (/shwelcome reload).
+    default: op

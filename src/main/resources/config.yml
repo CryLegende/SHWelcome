@@ -8,10 +8,18 @@
 # en bas du fichier).
 #
 # Commandes :
-#   /b [pseudo]   Souhaite la bienvenue à un nouveau joueur (le dernier arrivé
-#                 si aucun pseudo n'est donné).
+#   /bienvenue [pseudo]   (alias /b)   Souhaite la bienvenue à un nouveau joueur (le
+#                                      dernier arrivé si aucun pseudo n'est donné).
+#   /shwelcome reload                  Recharge config.yml et messages.yml, console comprise.
+#                                      Un fichier YAML invalide laisse l'ancienne configuration
+#                                      en place et affiche le fichier et la ligne de l'erreur.
+#                                      Les accueils en attente et les compteurs ne sont pas
+#                                      touchés. La section 'reseau' demande un redémarrage.
 #
-# Permissions : aucune, la commande est ouverte à tous les joueurs.
+# Permissions :
+#   shwelcome.use            /bienvenue (tous les joueurs par défaut).
+#   shwelcome.admin          Toutes les sous-commandes de /shwelcome (op par défaut).
+#   shwelcome.admin.reload   /shwelcome reload (op par défaut).
 #
 # Les textes envoyés aux joueurs sont dans 'messages.yml'.
 #
