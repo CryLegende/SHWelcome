@@ -23,8 +23,8 @@ CREATE TABLE IF NOT EXISTS bo_net.welcome_welcomes (
 
 CREATE TABLE IF NOT EXISTS bo_net.welcome_daily (
     uuid          CHAR(36) NOT NULL,
-    window_start  BIGINT   NOT NULL,             -- début de la période de 24 heures (ms)
-    done          INT      NOT NULL DEFAULT 0,   -- accueils récompensés dans la période, augmentés par « done = done + 1 »
+    window_start  BIGINT   NOT NULL,             -- minuit du jour compté (ms), remis à zéro quand il est dépassé
+    done          INT      NOT NULL DEFAULT 0,   -- accueils récompensés ce jour, augmentés par « done = done + 1 »
     PRIMARY KEY (uuid)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 

@@ -8,6 +8,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -16,7 +18,7 @@ import java.util.logging.Level;
  * Accueil des nouveaux joueurs partagé entre les serveurs Opale. Un joueur est nouveau pour tout le réseau (sa première
  * connexion récente dans le registre des premières connexions, et pas déjà annoncé par un autre serveur), son annonce
  * part sur tous les serveurs, et chaque accueil est compté en base : un joueur n'accueille qu'une fois chaque nouveau
- * joueur, et reste limité par jour quel que soit le serveur où il clique. Chargée seulement avec SHNetwork.
+ * joueur, et reste limité par jour (remis à zéro à minuit) quel que soit le serveur où il clique. Chargée seulement avec SHNetwork.
  *
  * <p>Aucune méthode ne touche la base sur le fil principal ni sur le fil du bus.</p>
  */
@@ -151,7 +153,9 @@ final class NetworkWelcome {
         async(() -> {
             WelcomeDatabase.Outcome outcome;
             try {
-                outcome = db.welcome(entry.uuid, welcomer, limit, DAY_MILLIS, System.currentTimeMillis());
+                long now = System.currentTimeMillis();
+                long midnight = LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli();
+                outcome = db.welcome(entry.uuid, welcomer, limit, midnight, now);
             } catch (SQLException e) {
                 failed(player, entry, e);
                 return;

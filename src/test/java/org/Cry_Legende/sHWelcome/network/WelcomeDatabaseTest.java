@@ -94,6 +94,12 @@ class WelcomeDatabaseTest {
         void run() throws Exception;
     }
 
+    /** Minuit du jour (UTC suffit pour les essais). */
+    private static long midnight() {
+        long now = System.currentTimeMillis();
+        return now - now % DAY;
+    }
+
     private void firstSeen(String name, long at) throws Exception {
         try (Connection c = pool.getConnection();
              PreparedStatement ps = c.prepareStatement("INSERT INTO " + FIRST_SEEN + " (name, display_name, first_played) VALUES (?, ?, ?)")) {
@@ -140,7 +146,7 @@ class WelcomeDatabaseTest {
         UUID welcomer = UUID.randomUUID();
         List<Outcome> results = new CopyOnWriteArrayList<>();
         // deux serveurs reçoivent le même clic au même moment, plusieurs fois
-        parallel(16, () -> results.add(db.welcome(newPlayer, welcomer, 5, DAY, System.currentTimeMillis())));
+        parallel(16, () -> results.add(db.welcome(newPlayer, welcomer, 5, midnight(), System.currentTimeMillis())));
         assertEquals(1, results.stream().filter(o -> o == Outcome.REWARDED).count());
         assertEquals(15, results.stream().filter(o -> o == Outcome.ALREADY_WELCOMED).count());
     }
@@ -150,22 +156,24 @@ class WelcomeDatabaseTest {
         UUID welcomer = UUID.randomUUID();
         List<Outcome> results = new CopyOnWriteArrayList<>();
         // 10 nouveaux joueurs différents accueillis en même temps, limite de 5 par jour
-        parallel(10, () -> results.add(db.welcome(UUID.randomUUID(), welcomer, 5, DAY, System.currentTimeMillis())));
+        parallel(10, () -> results.add(db.welcome(UUID.randomUUID(), welcomer, 5, midnight(), System.currentTimeMillis())));
         assertEquals(5, results.stream().filter(o -> o == Outcome.REWARDED).count());
         assertEquals(5, results.stream().filter(o -> o == Outcome.DAILY_LIMIT).count());
     }
 
     @Test
-    void limitedWelcomeStaysMarkedAndPeriodRestartsAfterADay() throws Exception {
+    void limitedWelcomeStaysMarkedAndCounterRestartsAtMidnight() throws Exception {
         UUID welcomer = UUID.randomUUID();
-        long start = System.currentTimeMillis();
-        assertEquals(Outcome.REWARDED, db.welcome(UUID.randomUUID(), welcomer, 1, DAY, start));
+        long midnight = midnight();
+        long start = midnight + 1000;
+        assertEquals(Outcome.REWARDED, db.welcome(UUID.randomUUID(), welcomer, 1, midnight, start));
         UUID late = UUID.randomUUID();
-        assertEquals(Outcome.DAILY_LIMIT, db.welcome(late, welcomer, 1, DAY, start + 1000));
+        assertEquals(Outcome.DAILY_LIMIT, db.welcome(late, welcomer, 1, midnight, start + 1000));
         // l'accueil sans récompense reste fait : pas de seconde chance sur le même joueur
-        assertEquals(Outcome.ALREADY_WELCOMED, db.welcome(late, welcomer, 1, DAY, start + 2000));
-        // une fois la période écoulée, le compteur repart de zéro
-        assertEquals(Outcome.REWARDED, db.welcome(UUID.randomUUID(), welcomer, 1, DAY, start + DAY + 1000));
+        assertEquals(Outcome.ALREADY_WELCOMED, db.welcome(late, welcomer, 1, midnight, start + 2000));
+        // minuit passé, le compteur repart de zéro, même à moins de 24 heures du premier accueil
+        long nextMidnight = midnight + DAY;
+        assertEquals(Outcome.REWARDED, db.welcome(UUID.randomUUID(), welcomer, 1, nextMidnight, nextMidnight + 1000));
     }
 
     @Test

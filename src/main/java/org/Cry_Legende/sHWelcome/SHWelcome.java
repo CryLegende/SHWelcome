@@ -28,7 +28,8 @@ import java.util.logging.Level;
 public class SHWelcome extends JavaPlugin implements Listener, TabCompleter {
 
     private final Map<String, NewPlayerEntry> newPlayers = new ConcurrentHashMap<>();
-    private final Map<UUID, PlayerWelcomeData> welcomeData = new ConcurrentHashMap<>();
+    // Sans SHNetwork : bienvenues du jour par joueur, gardées dans compteurs.yml et remises à zéro à minuit
+    private DailyCounters counters;
     private volatile FileConfiguration messages;
     // Non nul seulement avec SHNetwork : nouveau joueur décidé pour tout le réseau, accueils comptés en base
     private NetworkWelcome net;
@@ -43,6 +44,13 @@ public class SHWelcome extends JavaPlugin implements Listener, TabCompleter {
         getServer().getPluginManager().registerEvents(this, this);
         Bukkit.getScheduler().runTaskTimer(this, this::cleanupExpiredPlayers, 1200L, 1200L);
         enableNetwork();
+        if (net == null) {
+            counters = new DailyCounters(new File(getDataFolder(), "compteurs.yml"), Clock.systemDefaultZone());
+            String problem = counters.load();
+            if (problem != null) {
+                getLogger().warning(problem);
+            }
+        }
 
         for (String name : List.of("bienvenue", "shwelcome")) {
             PluginCommand command = getCommand(name);
@@ -57,6 +65,17 @@ public class SHWelcome extends JavaPlugin implements Listener, TabCompleter {
     public void onDisable() {
         if (net != null) {
             net.close();
+        }
+        saveCounters();
+    }
+
+    /** Écrit les compteurs du jour (sans SHNetwork) ; une erreur d'écriture est journalisée, rien d'autre n'est touché. */
+    private void saveCounters() {
+        if (counters == null) return;
+        try {
+            counters.save();
+        } catch (IOException e) {
+            getLogger().log(Level.WARNING, "compteurs.yml non écrit, les bienvenues du jour seront perdues au prochain redémarrage : " + e);
         }
     }
 
@@ -283,11 +302,8 @@ public class SHWelcome extends JavaPlugin implements Listener, TabCompleter {
             return;
         }
 
-        PlayerWelcomeData data = welcomeData.computeIfAbsent(player.getUniqueId(), k -> new PlayerWelcomeData());
-        checkDailyReset(data);
-
-        // Vérification de la limite journalière
-        if (data.count >= getConfig().getInt("daily_limit")) {
+        // Vérification de la limite journalière (remise à zéro à minuit)
+        if (counters.count(player.getUniqueId()) >= getConfig().getInt("daily_limit")) {
             player.sendMessage(color(message("daily_limit_reached")
                 .replace("%limit%", String.valueOf(getConfig().getInt("daily_limit")))));
             // Même si la récompense n'est pas donnée, on marque que le joueur a effectué son accueil
@@ -303,7 +319,10 @@ public class SHWelcome extends JavaPlugin implements Listener, TabCompleter {
 
         // Si la limite n'est pas atteinte, on poursuit normalement
         entry.welcomers.add(player.getUniqueId());
-        data.count++;
+        counters.increment(player.getUniqueId());
+        if (isEnabled()) {
+            Bukkit.getScheduler().runTaskAsynchronously(this, this::saveCounters);
+        }
 
         Player newPlayer = Bukkit.getPlayer(entry.playerName);
         if (newPlayer != null && newPlayer.isOnline()) {
@@ -378,17 +397,6 @@ public class SHWelcome extends JavaPlugin implements Listener, TabCompleter {
         return ChatColor.stripColor(message);
     }
 
-    private void checkDailyReset(PlayerWelcomeData data) {
-        LocalDateTime lastReset = LocalDateTime.ofInstant(
-            Instant.ofEpochMilli(data.lastReset),
-            ZoneId.systemDefault()
-        );
-        if (lastReset.plusDays(1).isBefore(LocalDateTime.now())) {
-            data.count = 0;
-            data.lastReset = System.currentTimeMillis();
-        }
-    }
-
     private void cleanupExpiredPlayers() {
         long currentTime = System.currentTimeMillis();
         newPlayers.entrySet().removeIf(entry ->
@@ -398,10 +406,5 @@ public class SHWelcome extends JavaPlugin implements Listener, TabCompleter {
 
     String color(String text) {
         return ChatColor.translateAlternateColorCodes('&', text);
-    }
-
-    private static class PlayerWelcomeData {
-        int count = 0;
-        long lastReset = System.currentTimeMillis();
     }
 }

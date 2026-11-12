@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
 
 /**
  * Accueils en MariaDB, partagés par tous les serveurs : qui a été annoncé comme nouveau joueur, qui l'a déjà
- * accueilli, combien d'accueils chacun a faits dans les dernières 24 heures. Chargée seulement avec SHNetwork
+ * accueilli, combien d'accueils chacun a faits depuis minuit. Chargée seulement avec SHNetwork
  * (HikariCP et le pilote MariaDB viennent de {@code libraries:} dans plugin.yml).
  *
  * <p>Toutes les méthodes bloquent : à appeler hors du fil principal et hors du fil du bus.</p>
@@ -145,25 +145,28 @@ public final class WelcomeDatabase {
     }
 
     /**
-     * Enregistre l'accueil de ce nouveau joueur par ce joueur et compte un accueil de plus dans sa période de 24 heures,
+     * Enregistre l'accueil de ce nouveau joueur par ce joueur et compte un accueil de plus dans sa journée,
      * dans une seule transaction. La réservation est un {@code INSERT IGNORE} : le serveur qui l'obtient est le seul à
      * continuer, l'autre répond {@link Outcome#ALREADY_WELCOMED}. Le décompte du jour est un {@code UPDATE ... WHERE done < ?}
      * dont le nombre de lignes touchées décide seul : deux serveurs qui comptent le même joueur ne dépassent jamais la
-     * limite. La période repart de zéro quand sa première est écoulée. Une limite atteinte garde l'accueil marqué
-     * comme fait (la bienvenue est dite, sans récompense). En cas d'erreur, rien n'est enregistré.
+     * limite. Le compteur repart de zéro à minuit : une ligne dont le jour ({@code window_start}) est antérieur à
+     * {@code dayStart} est remise à zéro. Une limite atteinte garde l'accueil marqué comme fait (la bienvenue est dite,
+     * sans récompense). En cas d'erreur, rien n'est enregistré.
+     *
+     * @param dayStart minuit du jour en cours (ms), heure du serveur
      */
-    public Outcome welcome(UUID newPlayer, UUID welcomer, int limit, long windowMs, long now) throws SQLException {
+    public Outcome welcome(UUID newPlayer, UUID welcomer, int limit, long dayStart, long now) throws SQLException {
         try (Connection c = pool.getConnection()) {
             // La ligne du compteur est créée hors transaction : dans une transaction, deux serveurs qui la créent
             // en même temps s'interbloquent (verrou de clé en double).
             try (PreparedStatement ps = c.prepareStatement("INSERT IGNORE INTO " + DAILY + " (uuid, window_start, done) VALUES (?, ?, 0)")) {
                 ps.setString(1, welcomer.toString());
-                ps.setLong(2, now);
+                ps.setLong(2, dayStart);
                 ps.executeUpdate();
             }
             for (int attempt = 1; ; attempt++) {
                 try {
-                    return welcomeTransaction(c, newPlayer, welcomer, limit, windowMs, now);
+                    return welcomeTransaction(c, newPlayer, welcomer, limit, dayStart, now);
                 } catch (SQLTransactionRollbackException e) {
                     if (attempt >= 3) {
                         throw e; // interblocage répété : l'accueil n'est pas compté, le joueur peut réessayer
@@ -173,7 +176,7 @@ public final class WelcomeDatabase {
         }
     }
 
-    private Outcome welcomeTransaction(Connection c, UUID newPlayer, UUID welcomer, int limit, long windowMs, long now) throws SQLException {
+    private Outcome welcomeTransaction(Connection c, UUID newPlayer, UUID welcomer, int limit, long dayStart, long now) throws SQLException {
         c.setAutoCommit(false);
         try {
             boolean first;
@@ -186,9 +189,9 @@ public final class WelcomeDatabase {
             Outcome outcome = Outcome.ALREADY_WELCOMED;
             if (first) {
                 try (PreparedStatement ps = c.prepareStatement("UPDATE " + DAILY + " SET window_start = ?, done = 0 WHERE uuid = ? AND window_start < ?")) {
-                    ps.setLong(1, now);
+                    ps.setLong(1, dayStart);
                     ps.setString(2, welcomer.toString());
-                    ps.setLong(3, now - windowMs);
+                    ps.setLong(3, dayStart);
                     ps.executeUpdate();
                 }
                 try (PreparedStatement ps = c.prepareStatement("UPDATE " + DAILY + " SET done = done + 1 WHERE uuid = ? AND done < ?")) {

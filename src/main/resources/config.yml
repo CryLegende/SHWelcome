@@ -38,7 +38,9 @@ messages_de_bienvenue:
 # après sa première connexion.
 cooldown_seconds: 60
 
-# Nombre maximum de bienvenues récompensées par joueur et par période de 24 heures.
+# Nombre maximum de bienvenues récompensées par joueur et par jour. Le compteur repart de zéro à minuit
+# (heure du serveur) et survit aux redémarrages : sans SHNetwork il est gardé dans compteurs.yml, avec SHNetwork
+# en base.
 daily_limit: 5
 
 # Commandes exécutées par la console pour récompenser le joueur qui accueille.
@@ -61,7 +63,7 @@ reward_log_format: "%player% -> souhaite la bienvenue à %new_player% (%reward%)
 reward_log_text: "2 tokens et 5 EXP de network"
 
 # Plusieurs serveurs Opale (SHNetwork). Sans SHNetwork, ou avec actif: false, rien de cette section n'est lu :
-# chaque serveur annonce ses propres nouveaux joueurs et compte les accueils en mémoire, comme avant.
+# chaque serveur annonce ses propres nouveaux joueurs et compte les accueils du jour dans compteurs.yml.
 # Avec SHNetwork, un joueur qui arrive pour la première fois sur un serveur n'est annoncé que si sa première
 # connexion au réseau est récente et qu'aucun autre serveur ne l'a déjà annoncé. L'annonce cliquable part sur tous
 # les serveurs, un joueur n'accueille qu'une fois chaque nouveau joueur et la limite par jour (daily_limit) se
