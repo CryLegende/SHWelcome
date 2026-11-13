@@ -20,7 +20,7 @@ Utilisé sur : **Opale**.
 
 ## Dépendances
 
-- Optionnelles : `SHLogs`, `SHNetwork` (plusieurs serveurs Opale, voir plus bas)
+- Optionnelles : `SHLogs`, `SHNetwork` (plusieurs serveurs de jeu, voir plus bas)
 
 ## Limite quotidienne
 
@@ -30,7 +30,7 @@ Utilisé sur : **Opale**.
 
 Chaque bienvenue récompensée est écrite dans SHLogs, dans le fichier `bienvenues` (`log_file`). Le texte de la ligne se règle avec `reward_log_format` et la récompense affichée avec `reward_log_text`. Une bienvenue sans récompense (limite quotidienne atteinte) n'est pas écrite. Sans SHLogs, la ligne est écrite dans la console.
 
-## Plusieurs serveurs Opale (SHNetwork)
+## Plusieurs serveurs de jeu (SHNetwork)
 
 Sans SHNetwork, ou avec `reseau.actif: false`, rien ne change : chaque serveur annonce les joueurs qui arrivent pour la première fois chez lui et compte les accueils du jour dans `plugins/SHWelcome/compteurs.yml`.
 
@@ -41,7 +41,7 @@ Avec SHNetwork, le plugin décide pour tout le réseau :
 - **Accueils** : un joueur n'accueille qu'une fois chaque nouveau joueur (`INSERT IGNORE` dans `welcome_welcomes`) et la limite `daily_limit` par jour se compte en base (`welcome_daily`), quel que soit le serveur où il clique. La réservation, le décompte et la décision de récompenser se font dans une seule transaction.
 - **Base indisponible** : l'accueil est refusé avec un message, rien n'est compté.
 
-Tables dans `bo_net`, créées au démarrage si l'utilisateur a le droit CREATE (`sql/schema.sql` pour le faire à la main) : `welcome_announced`, `welcome_welcomes`, `welcome_daily`. Les lignes de plus de `reseau.conservation-jours` jours sont supprimées au démarrage.
+Tables dans la base du réseau, créées au démarrage si l'utilisateur a le droit CREATE (`sql/schema.sql` pour le faire à la main) : `welcome_announced`, `welcome_welcomes`, `welcome_daily`. Les lignes de plus de `reseau.conservation-jours` jours sont supprimées au démarrage.
 
 ## Commandes
 
