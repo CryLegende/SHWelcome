@@ -49,7 +49,7 @@ reward_commands:
   - "azlink money add %player% 2"
   - "shnetworklevel exp give %player% 5"
   - "sm %player% &7&l« &a&lSH &8&l» &7Vous avez reçu &d2 tokens"
-  - "sm %player% &b+5 exp de network &8(&7/network&8)"
+  - "sm %player% &b+5 exp de network%shnetworklevel_bonus_texte% &8(&7/network&8)"
 
 # Nom du fichier SHLogs dans lequel chaque bienvenue récompensée est écrite.
 log_file: "bienvenues"
